@@ -1,6 +1,6 @@
 #		David Cristian Motta Propato
 # 				  Elder
-#				  Jose
+#				  Jose Vitor Rodrigues Zorzal
 #	   		    Eng. Comp. 
 #	 Trabalho 1 de Sistemas Operacionais
 
