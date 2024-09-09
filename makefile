@@ -1,9 +1,15 @@
+#		David Cristian Motta Propato
+# 				  Elder
+#				  Jose
+#	   		    Eng. Comp. 
+#	 Trabalho 1 de Sistemas Operacionais
+
 # Nome do executável
 TARGET = programa
 
 # Compilador e flags
 CC = gcc
-CFLAGS = -Wall -Wextra -O2
+CFLAGS = -Wall -g -Wextra -O2
 
 # Lista de arquivos fonte
 SRCS = main.c
@@ -29,5 +35,8 @@ clean:
 run: $(TARGET)
 	./$(TARGET)
 
-# Impede que make trate 'clean' como um arquivo
+val: $(TARGET)
+	valgrind -s --leak-check=full ./$(TARGET)
+
+# Impede que make trate 'clean' como um arquivo (isso acontece?)
 .PHONY: all clean run

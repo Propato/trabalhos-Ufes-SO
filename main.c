@@ -1,195 +1,183 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/types.h>
-#include <sys/wait.h>
+#include <errno.h>
+#include <fcntl.h>
 #include <unistd.h>
-#include <signal.h>
-#include <stdbool.h>
+#include <sys/wait.h>
 
+#define MAX_N_PROCESS 5
+#define MAX_N_PARAMS 3 // process's name + max params 
 
-//MAx quant de argunmentos do comando +2
-const int MaxCmdLength = 250;   
+void runProcess(char *process);
+pid_t runForeground(char *process);
+int runBackground(int n_process, char **process);
 
+void waitBackground();
+int splitString(char *buffer, char **process, char *delimiter, int MAX);
 
-void executaProcessoBackground(char **commands, int amountCommands);
-void executaProcessoForeground(bool isForeground, char *command);
-void runCommand(char *command);
+void testPointers(void* test, char *message);
+void testInts(int test, char *message);
 
-int separaComando(char *input, char *commands[]);
-void testError(int test, char *funcString);
+// Função auxiliar para printar informações dos processos
+void printAll(int i){
+    pid_t pid = getpid();    // Obtém o ID do processo atual
+    pid_t pgid = getpgid(0); // Obtém o PGID do processo atual
+    pid_t sid = getsid(0);   // Obtém o SID do processo atual
 
+    printf("Process: %d\n", i);
+    printf("PID: %d\n", pid);
+    printf("PGID: %d\n", pgid);
+    printf("SID: %d\n", sid);
+}
 
+int main(int argc, char **argv){
 
+    size_t size = 30;
+    int n_process = 0;
 
+    // printf("Shell Process:\n");
+    // printAll();
 
+    char **process = malloc(sizeof(char*) * MAX_N_PROCESS);
+    testPointers(process, "Error Malloc -> process");
+    
+    char *buffer = malloc(sizeof(char) * size);
+    testPointers(buffer, "Error Malloc -> buffer");
 
-int main(void){
-    printf("fsh>");
-    char *commands[5];
-    char linha[150];
-     
-    //Lendo os comandos
-    if(fgets(linha, sizeof(linha), stdin) == NULL){
-        printf("Erro Leitura dos Comandos !!");
-        exit(1);
+    while(1){
+        printf("fsh> ");
+        size_t new_size = getline(&buffer, &size, stdin);
+        if(new_size == 1)
+            continue;
+        /* APENAS TESTE, SERVE PARA FINALIZAR FACILMENTE A EXECUÇÃO DO PROGRAMA */
+        if(new_size == 2) 
+            break;
+        testInts(new_size-1, "Error getLine");
+        buffer[new_size-1] = '\0';
+
+        n_process = splitString(buffer, process, "#", MAX_N_PROCESS);
+
+        // Both if's are a protection for correct memory and process management, in case a sent process does not work properly.
+        pid_t foreID = runForeground(process[0]);
+        if (foreID == 0){
+            free(process);
+            free(buffer);
+            return 3;
+        }
+        int feedback = runBackground(n_process-1, &process[1]);
+        if (feedback >= 0){
+            free(process);
+            free(buffer);
+            return feedback;
+        }
+
+        testInts(waitpid(foreID, NULL, 0), "Error WaitPID");
     }
-    linha[strcspn(linha, "\n")] = '\0';
-    int quantCommands = separaComando(linha, commands);
 
-    for(int i=0; i<quantCommands; i++){
-        printf("Token %d: %s\n", i, commands[i]);
+    free(process);
+    free(buffer);
+  return 0;
+}
+
+pid_t runForeground(char *process){
+    pid_t pid;
+    testInts((pid=fork()), "Error Fork Foreground");
+
+	if(pid == 0){
+        printAll(-1);
+        runProcess(process);
     }
+    return pid;
+}
 
-    pid_t pid = fork();
+int runBackground(int n_process, char **process){
+    if(n_process == 0)
+        return -1;
 
-    //Verificando Erro
-    if(pid < 0){
-        printf("Erro ao Criar Fork");
-        exit(1);
+    // Necessario um 'pai' para os processos em background para que eles possam estar no mesmo grupo e sessao, pois o pai só morre depois de criar todos os filhos dentro da mesma sessao e grupo.
+    pid_t pid;
+    testInts((pid=fork()), "Error Fork Background Father");
+    if(pid != 0)
+        return -1;
+
+    testInts(setsid(), "Error setSID");
+
+    for (int i = 0; i < n_process; i++){
+        //Criando novo Processo
+        testInts((pid=fork()), "Error Fork Background Process");
+
+        /* Sons */
+        if(pid == 0){
+            testInts((pid=fork()), "Error Fork Nested Background Process");
+            printAll(i);
+            runProcess(process[i]);
+            return 4;
+        }
     }
-    if(pid == 0){
-        executaProcessoForeground(true, commands[0]);
-        executaProcessoBackground(commands, quantCommands);
-
-    }
-
-
-
-
-/*
-    ExecutaProcesso(true, commands[0]);
-    for(int i=1; i<quantCommands; i++){
-        executaProcessoForeground(false, commands[i]);
-    } 
-
-    char *args[] = {"ps", NULL};
-    execvp(args[0], args);
-
-    //printf("Quant Tokens:%d", quantCommands);
-
-*/
+    waitBackground(); // função para esperar todos os processos em background morrerem, checando seus status e sinais recebidos (talvez seja mais interessante que o sigaction)
     return 0;
 }
 
-
-
-void executaProcessoBackground(char **commands, int amountCommands){
-    //Criando nova Sessão
-    if(setsid() == -1){
-        printf("setsId Error");
-        exit(1);
-    }
-/*
-    FILE* null_file = fopen("/dev/null", "w");
-    if (null_file == NULL) {
-        perror("Failed to open /dev/null");
-        exit(EXIT_FAILURE);
-    }
-
-    // Redirect stdout and stderr to /dev/null
-    freopen("/dev/null", "w", stdout);
-    freopen("/dev/null", "w", stderr);
-*/
-    //Obtendo pid do Pai
-    pid_t pgid = getpid();
-
-    for (int i = 1; i < amountCommands; i++){
-        //Criando novo Processo
-        pid_t pid = fork();
-        testError(pid, "fork  Error");
-
-        if(pid == 0){
-            
-            pid_t pid2 = fork();
-            testError(pid2, "fork  Error");
-            if(pid2 == 0){
-                setpgid(0, pgid);
-                runCommand(commands[i]);
-            }
-
-            setpgid(0, pgid);
-            runCommand(commands[i]);
-        }
-    }
-    
-    return;
-}
-
-
-void executaProcessoForeground(bool isForeground, char *command){    
-    pid_t pid = fork();
-
-    //Verificando Erro
-    if(pid < 0){
-        printf("Erro ao Criar Fork");
-        exit(1);
-    
-    //Processo Filho
-    }else if(pid == 0){
-        runCommand(command);
-    
-    }else{
-        printf("Processo pai com PID %d\n", getpid()); 
-        if(isForeground){
-            wait(NULL); // Aguarda o término do processo filho
-        }
-    }
-    
-    return ;
-}
-
-
-void runCommand(char *command){
+void runProcess(char *process){
     //printf("Processo filho com PID %d\n", getpid());
-    
-    //Argumentos do comando
-    char *argv[MaxCmdLength];
-    int argc =0;
 
-    //Separando argumentos do Comando
-    char *token1 = strtok(command, " \t\n");
-    while (token1 != NULL){
-        argv[argc++] = token1;
-        token1 = strtok(NULL, " \n\t");
-    }
+    // printf("Process: %s\n", process);
     
-    //setando NULL na ultima posição
+    int argc = 0;
+    char **argv = malloc(sizeof(char*) * (MAX_N_PARAMS+1)); // +1 for the NULL at the end.
+    testPointers(argv, "Error Malloc -> argv");
+
+    argc = splitString(process, argv, " \n\t\v\f\r", MAX_N_PARAMS);
+
+    // setando NULL na ultima posição
     argv[argc] = NULL;
     
-    //Executando o Comando
-    if(execvp(argv[0],argv) != -1){
-        printf("Função execvp ERRO, command:%s\n", argv[0]);
-        exit(1);
-    }
-    return;
+    // Executando o Comando
+    execvp(argv[0], argv);
+        printf("execvp ERRO - process invalid: %s\n", argv[0]);
+        free(argv);
 }
 
+void waitBackground(){
+    int status;
+    pid_t pid;
 
-
-
-
-
-
-int separaComando(char *input, char *commands[]){
-    char *token;
-    int quantTokens = 0;
-    
-    token = strtok(input, "#");
-    
-    for(quantTokens = 0; token != NULL && quantTokens<5; quantTokens++){
-        commands[quantTokens] = token;
-        token = strtok(NULL, "#");
+    while ((pid = waitpid(-1, &status, 0)) > 0) {
+        if (WIFEXITED(status)) {
+            printf("Child %d exited with status %d\n", pid, WEXITSTATUS(status));
+        } else if (WIFSIGNALED(status)) {
+            printf("Child %d killed by signal %d\n", pid, WTERMSIG(status));
+        }
     }
 
-    return quantTokens;
+    if (pid == -1 && errno == ECHILD) {
+        printf("No more children to wait for.\n");
+    } else {
+        perror("waitpid error");
+    }
 }
 
+int splitString(char *buffer, char **process, char *delimiter, int MAX){
 
-void testError(int test, char *funcString){
-    if(test == -1){
-        printf("%s", funcString);
+    int n = 0;
+    process[n++] = strtok(buffer, delimiter);
+    while(n < MAX && (process[n] = strtok(NULL, delimiter))){
+        n++;
+        // printf("process[%d] = %s.\n", n, process);
+    }
+    return n;
+}
+
+void testPointers(void* test, char *message){
+    if(test == NULL){
+        printf("%s\n", message);
+        exit(2);
+    }
+}
+void testInts(int test, char *message){
+    if(test < 0){
+        perror(message);
         exit(1);
     }
-    return;
 }
