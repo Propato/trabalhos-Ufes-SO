@@ -1,35 +1,53 @@
 #		David Cristian Motta Propato
-# 				  Elder
-#				  Jose Vitor Rodrigues Zorzal
+#			Elder Ribeiro Storck
+#		 Jose Vitor Rodrigues Zorzal
 #	   		    Eng. Comp. 
 #	 Trabalho 1 de Sistemas Operacionais
 
 # Nome do executável
-TARGET = programa
+TARGET = SO
+
+# nome do arquivo principal (fora da pasta SRC)
+MAIN = main
 
 # Compilador e flags
 CC = gcc
-CFLAGS = -Wall -g -Wextra -O2
+CFLAGS = -Wall -g -O3
 
-# Lista de arquivos fonte
-SRCS = main.c
-# Lista de arquivos objeto
-OBJS = $(SRCS:.c=.o)
+# define lista de arquivos-fonte.
+SOUCERS = $(wildcard ./SRC/*.c) ./SRC/$(MAIN).c
+
+# define lista de arquivos-headers.
+HEADERS = $(wildcard ./HEADERS/*.h)
+
+# define lista dos arquivos-objeto usando nomes da lista de arquivos-fonte
+OBJ_FOLDER = ./OBJ
+OBJETOS = $(subst ./SRC,$(OBJ_FOLDER),$(SOUCERS:.c=.o))
+
+############ ALVOS
 
 # Regra padrão
-all: $(TARGET)
+all: $(OBJ_FOLDER) $(TARGET)
+
+# gera pasta dos arquivos-objetos
+$(OBJ_FOLDER):
+	mkdir -p $@
 
 # Regra para criar o executável
-$(TARGET): $(OBJS)
-	$(CC) $(CFLAGS) -o $@ $(OBJS)
+$(TARGET): $(OBJETOS)
+	$(CC) $(CFLAGS) -o $@ $(OBJETOS)
 
-# Regra para compilar os arquivos .c em .o
-%.o: %.c
-	$(CC) $(CFLAGS) -c $< -o $@
+# Regra para criar arquivos-objeto
+$(OBJ_FOLDER)/%.o: SRC/%.c HEADERS/%.h
+	$(CC) -c $(CFLAGS) $< -o $@
+
+# Regra para criar arquivo-objeto do arquivo principal
+$(OBJ_FOLDER)/$(MAIN).o: ./$(MAIN).c
+	$(CC) -c $(CFLAGS) $< -o $@
 
 # Regra para limpar os arquivos gerados
 clean:
-	rm -f $(TARGET) $(OBJS)
+	rm -rf $(TARGET) $(OBJ_FOLDER)
 
 # Regra para executar o programa
 run: $(TARGET)
@@ -38,5 +56,4 @@ run: $(TARGET)
 val: $(TARGET)
 	valgrind -s --leak-check=full ./$(TARGET)
 
-# Impede que make trate 'clean' como um arquivo (isso acontece?)
-.PHONY: all clean run
+.PHONY: all clean run val
