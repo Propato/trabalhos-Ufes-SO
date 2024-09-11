@@ -1,59 +1,64 @@
 #		David Cristian Motta Propato
 #			Elder Ribeiro Storck
 #		 Jose Vitor Rodrigues Zorzal
-#	   		    Eng. Comp. 
-#	 Trabalho 1 de Sistemas Operacionais
 
-# Nome do executável
-TARGET = SO
+#	   		 UFES Eng. Comp. 
+#	 		Operating Systems
 
-# nome do arquivo principal (fora da pasta SRC)
+# Executable name
+EXEC = SO
+
+# Main file name (outside the SRC folder)
 MAIN = main
 
-# Compilador e flags
+# Compiler and Flags
 CC = gcc
 CFLAGS = -Wall -g -O3
 
-# define lista de arquivos-fonte.
-SOUCERS = $(wildcard ./SRC/*.c) ./SRC/$(MAIN).c
+# Defines the list of source files
+SOUCER_FOLDER = ./SRC
+SOUCERS = $(wildcard $(SOUCER_FOLDER)/*.c) $(SOUCER_FOLDER)/$(MAIN).c
 
-# define lista de arquivos-headers.
-HEADERS = $(wildcard ./HEADERS/*.h)
+# Defines the list of header files
+HEADER_FOLDER = ./HEADERS
+HEADERS = $(wildcard $(HEADER_FOLDER)/*.h)
 
-# define lista dos arquivos-objeto usando nomes da lista de arquivos-fonte
+# Define the list of object files using the list of source files
 OBJ_FOLDER = ./OBJ
-OBJETOS = $(subst ./SRC,$(OBJ_FOLDER),$(SOUCERS:.c=.o))
+OBJECTS = $(subst $(SOUCER_FOLDER),$(OBJ_FOLDER),$(SOUCERS:.c=.o))
 
-############ ALVOS
+############ TARGETS
 
-# Regra padrão
-all: $(OBJ_FOLDER) $(TARGET)
+# Building
+all: $(OBJ_FOLDER) $(EXEC)
 
-# gera pasta dos arquivos-objetos
+# Makes the objects folder
 $(OBJ_FOLDER):
 	mkdir -p $@
 
-# Regra para criar o executável
-$(TARGET): $(OBJETOS)
-	$(CC) $(CFLAGS) -o $@ $(OBJETOS)
+# Makes the exec file
+$(EXEC): $(OBJECTS)
+	$(CC) $(CFLAGS) -o $@ $(OBJECTS)
 
-# Regra para criar arquivos-objeto
-$(OBJ_FOLDER)/%.o: SRC/%.c HEADERS/%.h
+# Makes the object files
+$(OBJ_FOLDER)/%.o: $(SOUCER_FOLDER)/%.c $(HEADER_FOLDER)/%.h
 	$(CC) -c $(CFLAGS) $< -o $@
 
-# Regra para criar arquivo-objeto do arquivo principal
+# Makes the object file for the main file
 $(OBJ_FOLDER)/$(MAIN).o: ./$(MAIN).c
 	$(CC) -c $(CFLAGS) $< -o $@
 
-# Regra para limpar os arquivos gerados
+# Cleaning
 clean:
-	rm -rf $(TARGET) $(OBJ_FOLDER)
+	rm -rf $(EXEC) $(OBJ_FOLDER)
 
-# Regra para executar o programa
-run: $(TARGET)
-	./$(TARGET)
+# Running
+run: $(EXEC)
+	./$(EXEC)
 
-val: $(TARGET)
-	valgrind -s --leak-check=full ./$(TARGET)
+# Running with Valgrind
+val: $(EXEC)
+	valgrind -s --leak-check=full ./$(EXEC)
 
+# Explicit declaration of command rules
 .PHONY: all clean run val

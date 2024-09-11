@@ -8,43 +8,41 @@
 
 #include "HEADERS/list.h"
 
-#define MAX_N_PROCESS 5
+// ####################  Process Rules  ####################
+#define MAX_N_PROCESS 5 // 1 foreground + 4 background process
 #define MAX_N_PARAMS 3 // process's name + max params 
 
-void runProcess(char *process);
-pid_t runForeground(char *process);
-int runBackground(int nProcess, char **process, pid_t *IDs);
+// ###########  Functions to Execute Processes  ###########
+void    runProcess      (char *process);
+pid_t   runForeground   (char *process);
+int     runBackground   (int nProcess, char **process, pid_t *IDs);
 
-void sendSignal(pid_t pid, int signal);
-void handle_sigchld(int sig);
+// ###################  Signal Handlers  ###################
+void    sendSignal      (pid_t pid, int signal);
+void    checkSigChld    (pid_t pid, int status);
+void    handleSigChld   (int sig);
 
-// void waitBackground();
-int splitString(char *buffer, char **process, char *delimiter, int MAX);
+// #################  Secondary Functions  #################
+int     splitString     (char *buffer, char **process, char *delimiter, int MAX);
+void    setActions       ();
+void    cleanAll        (char **process, char *buffer, list *listProcess)
 
-void testPointers(void* test, char *message);
-void testInts(int test, char *message);
+// ###############  Error Testing Functions  ###############
+void    testPointers    (void* test, char *message);
+void    testInts        (int test, char *message);
 
-// Função auxiliar para printar informações dos processos
-void printAll(int i){
-    pid_t pid = getpid();    // Obtém o ID do processo atual
-    pid_t pgid = getpgid(0); // Obtém o PGID do processo atual
-    pid_t sid = getsid(0);   // Obtém o SID do processo atual
-
-    printf("Process: %d\n", i);
-    printf("PID: %d\n", pid);
-    printf("PGID: %d\n", pgid);
-    printf("SID: %d\n", sid);
-}
+/*
+    #########################  Main  #########################
+*/
 
 list *listProcess = NULL;
 
 int main(int argc, char **argv){
 
+    /************ Init Variables ************/
     size_t size = 30;
     int nProcess = 0;
-
-    // printf("Shell Process:\n");
-    // printAll();
+    pid_t IDs[MAX_N_PROCESS];
 
     char **process = malloc(sizeof(char*) * MAX_N_PROCESS);
     testPointers(process, "Error Malloc -> process");
@@ -52,22 +50,17 @@ int main(int argc, char **argv){
     char *buffer = malloc(sizeof(char) * size);
     testPointers(buffer, "Error Malloc -> buffer");
 
-    pid_t IDs[MAX_N_PROCESS];
-
-    struct sigaction sigChild;
-    sigChild.sa_handler = &handle_sigchld;
-    sigChild.sa_flags = SA_RESTART | SA_NOCLDSTOP;
-    sigemptyset(&sigChild.sa_mask);
-
-    sigaction(SIGINT, &sigChild, NULL);
-    testInts(sigaction(SIGCHLD, &sigChild, NULL), "Error SigAction");
+    /************ Set Sig Handlers ************/
+    setActions();
 
     while(1){
         printf("fsh> ");
+
+        /************ Get & Handle Input ************/
         size_t new_size = getline(&buffer, &size, stdin);
         if(new_size == 1)
             continue;
-        /* APENAS TESTE, SERVE PARA FINALIZAR FACILMENTE A EXECUÇÃO DO PROGRAMA */
+        /* RASCUNHO: SERVE PARA FINALIZAR FACILMENTE A EXECUÇÃO DO PROGRAMA */
         if(new_size == 2) 
             break;
         testInts(new_size-1, "Error getLine");
@@ -75,41 +68,60 @@ int main(int argc, char **argv){
 
         nProcess = splitString(buffer, process, "#", MAX_N_PROCESS);
 
+        /************ Run Process ************/
         // Both if's are a protection for correct memory and process management, in case a sent process does not work properly.
-        pid_t foreID = runForeground(process[0]);
-        if (foreID == 0){
-            free(process);
-            free(buffer);
-            cleanList(listProcess);
+        IDs[0] = runForeground(process[0]); // Return the son's pid
+        if (IDs[0] == 0){
+            cleanAll(process, buffer, listProcess);
             return 3;
         }
-        IDs[0] = foreID;
         if (runBackground(nProcess-1, &process[1], &IDs[1])){
-            free(process);
-            free(buffer);
-            cleanList(listProcess);
+            cleanAll(process, buffer, listProcess);
             return 4;
         }
 
+        /* RASCUNHO: AUXILIAR NOS TESTES, IMPRIMINDO OS IDS */
         printf("IDs:");
         for(int i=0; i< nProcess; i++)
             printf(" %d", IDs[i]);
         printf("\n");
         
+        /************ Stores Process IDs ************/
         listProcess = insertList(listProcess, nProcess, IDs);
+
         int status=0;
-        testInts(waitpid(foreID, &status, 0), "Error WaitPID");
-        if (WIFSIGNALED(status))
-            sendSignal(foreID, WTERMSIG(status));
-        else if (WIFEXITED(status)){
-            findInList(listProcess, foreID);
-        }
+        testInts(waitpid(IDs[0], &status, 0), "Error WaitPID");
+        checkSigChld(IDs[0], status);
     }
 
-    free(process);
-    free(buffer);
-    cleanList(listProcess);
+    cleanAll(process, buffer, listProcess);
   return 0;
+}
+
+/*
+    #########################################################
+    ###########   Functions to Execute Processes  ###########
+    #########################################################
+*/
+
+void runProcess(char *process){
+    //printf("Processo filho com PID %d\n", getpid());
+
+    // printf("Process: %s\n", process);
+    
+    int argc = 0;
+    char **argv = malloc(sizeof(char*) * (MAX_N_PARAMS+1)); // +1 for the NULL at the end.
+    testPointers(argv, "Error Malloc -> argv");
+
+    argc = splitString(process, argv, " \n\t\v\f\r", MAX_N_PARAMS);
+    // setando NULL na ultima posição
+    argv[argc] = NULL;
+    
+    // Executando o Comando
+    if(argc)
+        execvp(argv[0], argv);
+    printf("execvp ERRO - process invalid: %s\n", argv[0]);
+    free(argv);
 }
 
 pid_t runForeground(char *process){
@@ -132,7 +144,7 @@ int runBackground(int nProcess, char **process, pid_t *IDs){
 
     for (int i = 0; i < nProcess; i++){
         //Criando novo Processo
-        testInts((pid=fork()), "Error Fork Background Process");
+        testInts((pid=fork()), "Error Fork Background");
         if(pid > 0){
             IDs[i] = pid;
             if(i==0)
@@ -142,7 +154,7 @@ int runBackground(int nProcess, char **process, pid_t *IDs){
         testInts(setpgid(0, gpID), "Error setPGID Background");
 
         /* Sons */
-        testInts((pid=fork()), "Error Fork Nested Background Process");
+        testInts((pid=fork()), "Error Fork Nested Background");
         // printAll(i);
         runProcess(process[i]);
         return 4;
@@ -150,25 +162,11 @@ int runBackground(int nProcess, char **process, pid_t *IDs){
     return 0;
 }
 
-void runProcess(char *process){
-    //printf("Processo filho com PID %d\n", getpid());
-
-    // printf("Process: %s\n", process);
-    
-    int argc = 0;
-    char **argv = malloc(sizeof(char*) * (MAX_N_PARAMS+1)); // +1 for the NULL at the end.
-    testPointers(argv, "Error Malloc -> argv");
-
-    argc = splitString(process, argv, " \n\t\v\f\r", MAX_N_PARAMS);
-    // setando NULL na ultima posição
-    argv[argc] = NULL;
-    
-    // Executando o Comando
-    if(argc)
-        execvp(argv[0], argv);
-    printf("execvp ERRO - process invalid: %s\n", argv[0]);
-    free(argv);
-}
+/*
+    #########################################################
+    ###################  Signal Handlers  ###################
+    #########################################################
+*/
 
 void sendSignal(pid_t pid, int signal){
     list* process = findInList(listProcess, pid);
@@ -189,18 +187,30 @@ void sendSignal(pid_t pid, int signal){
     // sleep(20);
 }
 
-void handle_sigchld(int sig) {
+void checkSigChld(pid_t pid, int status){
+    if (WIFSIGNALED(status)) {
+        sendSignal(pid, WTERMSIG(status));
+    } else if (WIFSTOPPED(status)) {
+        sendSignal(pid, WSTOPSIG(status));
+    } else if (WIFEXITED(status)){
+        findInList(listProcess, pid); // Find in List also sets the process state as 0.
+    }
+}
+
+void handleSigChld(int sig) {
     int status;
     pid_t pid;
 
     while ((pid = waitpid(-1, &status, WNOHANG)) > 0) {
-        if (WIFSIGNALED(status)) {
-            sendSignal(pid, WTERMSIG(status));
-        } else if (WIFEXITED(status)){
-            findInList(listProcess, pid);
-        }
+        checkSigChld(pid, status);
     }
 }
+
+/*
+    #########################################################
+    #################  Secondary Functions  #################
+    #########################################################
+*/
 
 int splitString(char *buffer, char **process, char *delimiter, int MAX){
 
@@ -215,6 +225,33 @@ int splitString(char *buffer, char **process, char *delimiter, int MAX){
     }
     return n;
 }
+
+void setActions(){
+
+    struct sigaction sigChild;
+    sigChild.sa_handler = &handleSigChld;
+    sigChild.sa_flags = SA_RESTART | SA_NOCLDSTOP;
+    sigemptyset(&sigChild.sa_mask);
+
+    testInts(sigaction(SIGCHLD, &sigChild, NULL), "Error SigAction");
+}
+
+void cleanAll(char **process, char *buffer, list *listProcess){
+    free(process);
+    process = NULL;
+
+    free(buffer);
+    buffer = NULL;
+
+    cleanList(listProcess);
+    listProcess = NULL;
+}
+
+/*
+    #########################################################
+    ###############  Error Testing Functions  ###############
+    #########################################################
+*/
 
 void testPointers(void* test, char *message){
     if(test == NULL){
