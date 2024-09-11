@@ -153,7 +153,7 @@ void waitall() {
         checkSigChld(pid, status);
     }
 
-    if(errno = EINTR){
+    if(errno == EINTR){
         printf("fsh> There are still zombie child processes.\n");
         errno = 0;
     }
@@ -198,7 +198,6 @@ int runBackground(int nProcess, char **process, pid_t *IDs){
     if(nProcess == 0)
         return 0;
 
-    // Necessario um 'pai' para os processos em background para que eles possam estar no mesmo grupo e sessao, pois o pai só morre depois de criar todos os filhos dentro da mesma sessao e grupo.
     pid_t pid, gpID=0;
 
     for (int i = 0; i < nProcess; i++){
@@ -341,7 +340,7 @@ void setActions(){
 
     struct sigaction actionSigInt;
     actionSigInt.sa_handler = &handlerSigInt;
-    actionSigInt.sa_flags = SA_RESTART;
+    actionSigInt.sa_flags = SA_RESTART | SA_NOCLDSTOP;
     sigemptyset(&actionSigInt.sa_mask);
 
     testInts(sigaction(SIGINT, &actionSigInt, NULL), "Error Sig Int Action");
@@ -349,7 +348,7 @@ void setActions(){
     struct sigaction actionSigTstp;
     actionSigTstp.sa_handler = &handlerSigTstp;
     sigemptyset(&actionSigTstp.sa_mask);
-    actionSigTstp.sa_flags = SA_RESTART;
+    actionSigTstp.sa_flags = SA_RESTART | SA_NOCLDSTOP;
 
     testInts(sigaction(SIGTSTP, &actionSigTstp, NULL), "Error Sig TStp Action");
 }
