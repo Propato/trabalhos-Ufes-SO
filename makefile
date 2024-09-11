@@ -58,7 +58,7 @@ run: $(EXEC)
 
 # Running with Valgrind
 val: $(EXEC)
-	valgrind -s --leak-check=full ./$(EXEC)
+	valgrind -s --leak-check=full --show-leak-kinds=all ./$(EXEC)
 
 # Explicit declaration of command rules
 .PHONY: all clean run val

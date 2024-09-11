@@ -1,21 +1,31 @@
 #ifndef LIST_H
 #define LIST_H
 
-struct LIST {
+struct CEL {
     pid_t *processIDs;
     unsigned int nProcess;
-    char *states;
 
-    struct LIST *next;
+    struct CEL *next;
+};
+
+typedef struct CEL cel;
+
+struct LIST {
+    unsigned int nProcessAlive;
+
+    struct CEL *first;
+    struct CEL *last;
 };
 
 typedef struct LIST list;
 
-list* insertList(list *l, unsigned int nProcess, pid_t *processIDs);
+list* initList();
 
-list * findInList(list *l, pid_t ID);
+cel* createCel(unsigned int nProcess, pid_t *processIDs);
 
-void setStates(list *l);
+void insertList(list *l, cel* c);
+
+cel* findInList(list *l, pid_t ID);
 
 void cleanList(list *l);
 

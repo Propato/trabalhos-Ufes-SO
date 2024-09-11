@@ -4,88 +4,108 @@
 #include "../HEADERS/list.h"
 
 /*
-typedef struct {
+struct CEL {
     pid_t *processIDs;
     unsigned int nProcess;
-    unsigned int *states;
 
-    list *next;
-} LIST *list;
+    struct CEL *next;
+};
+
+typedef struct CEL cel;
+
+struct LIST {
+    unsigned int nProcessAlive;
+
+    struct CEL *first;
+    struct CEL *last;
+};
+
+typedef struct LIST list;
 */
 
-list* insertList(list *l, unsigned int nProcess, pid_t *processIDs){
-    
-    list *cel = malloc(sizeof(list));
-    cel->nProcess = nProcess;
+list* initList(){
+    list *l = malloc(sizeof(list));
 
-    cel->processIDs = malloc(sizeof(pid_t)*nProcess);
-    pid_t *aux = cel->processIDs;
-    
-    cel->states = malloc(sizeof(char)*nProcess);
-    char *states = cel->states;
+    l->nProcessAlive = 0;
 
+    l->first = NULL;
+    l->last = NULL;
+
+    return l;
+}
+
+cel* createCel(unsigned int nProcess, pid_t *processIDs){
+    if(!processIDs || !nProcess) return NULL;
+
+    cel *c = malloc(sizeof(cel));
+    c->nProcess = nProcess;
+
+    c->processIDs = malloc(sizeof(pid_t) * nProcess);
+    pid_t *auxIDs = c->processIDs;
+    
     for(int i=0; i<nProcess; i++){
-        *aux = *processIDs;
-        *states = 1;
+        *auxIDs = *processIDs;
 
-        aux++;
-        states++;
+        auxIDs++;
         processIDs++;
     }
 
-    cel->next = l;
+    c->next = NULL;
 
-    return cel;
+    return c;
 }
 
-list* findInList(list *l, pid_t ID){
+void insertList(list *l, cel *c){
+    if(!l || !c) return;
+    
+    if(!l->first){
+        l->first = c;
+        l->last = c;
+        l->nProcessAlive = c->nProcess;
+        return;
+    }
 
-    for(list *cel=l; cel != NULL; cel=cel->next){
+    l->last->next = c;
+    l->last = c;
+    l->nProcessAlive += c->nProcess;
+}
 
-        if(!cel->processIDs || !cel->states)
+cel* findInList(list *l, pid_t ID){
+    if(!l || !l->first || !ID) return NULL;
+
+
+    for(cel *c=l->first; c != NULL; c=c->next){
+
+        if(!c->processIDs)
             continue;
 
-        pid_t *aux = cel->processIDs;
-        char *states = cel->states;
+        pid_t *auxIDs = c->processIDs;
 
-        for(int i=0; i<cel->nProcess; i++){
-            if(*aux == ID && *states==1){
-                *states = 0;
-                return cel;
-            }
-            aux++;
-            states++;
+        for(int i=0; i<c->nProcess; i++){
+            if(*auxIDs == ID )
+                return c;
+
+            auxIDs++;
         }
     }
     return NULL;
 }
 
-void setStates(list *l){
-    if(!l || !l->states)
-        return;
+void cleanCel(cel *c){
+    if(!c) return;
 
-    char *states = l->states;
-
-    for(int i=0; i<l->nProcess; i++){
-        *states = 0;
-        states++;
-    }
+    if(c->processIDs)
+        free(c->processIDs);
+    free(c);
 }
 
 void cleanList(list *l){
-    if(!l)
-        return;
+    if(!l) return;
 
-    if(l->processIDs)
-        free(l->processIDs);
-    if(l->states)
-        free(l->states);
-    for(list *cel=l->next; cel != NULL; cel=cel->next){
-        if(cel->processIDs)
-            free(cel->processIDs);
-        if(cel->states)
-            free(cel->states);
-        free(l);
-        l = cel;
-    } free(l);
+    cel *aux, *c;
+    for(c = l->first; c != NULL; c = aux){
+        aux = c->next;
+        cleanCel(c);
+    }
+    free(l);
 }
