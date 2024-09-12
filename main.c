@@ -128,7 +128,7 @@ int main(int argc, char **argv){
     #########################################################
 */
 
-void die() {
+void die() {    //Função interna que finaliza a shell e mata todos os processos antes
     printf("fsh> Killing Shell and Children...\n");
     if(listProcess)
         for(cel *c=listProcess->first; c != NULL && listProcess->nProcessAlive; c = c->next){
@@ -136,7 +136,7 @@ void die() {
         }
 }
 
-void waitall() {
+void waitall() {   //Função interna que libera todos os descendentes zumbies
     pid_t pid;
     int status;
 
@@ -159,7 +159,7 @@ void waitall() {
     #########################################################
 */
 
-void sendSignal(pid_t pid, int signal){
+void sendSignal(pid_t pid, int signal){       //Função para propagar sinal de um processo para os processos na mesma linha
     cel* c = findInList(listProcess, pid);
     if(!c)
         return;
@@ -189,7 +189,7 @@ void sendSignal(pid_t pid, int signal){
     }
 }
 
-void checkSigChld(pid_t pid, int status){
+void checkSigChld(pid_t pid, int status){   //Função para verificar se o processo foi morto ou suspenso por um sinal e enviar o sinal
     if (WIFSIGNALED(status)) {
         sendSignal(pid, WTERMSIG(status));
     } else if (WIFSTOPPED(status)) {
@@ -199,7 +199,7 @@ void checkSigChld(pid_t pid, int status){
     }
 }
 
-void handleSigChld(int sig){
+void handleSigChld(int sig){    // Verifica os filhos que finalizaram
     int status;
     pid_t pid;
 
@@ -214,7 +214,7 @@ void handleSigChld(int sig){
     #########################################################
 */
 
-void handlerSigInt(int sig){
+void handlerSigInt(int sig){   //Tratador do SIGINT
     if (listProcess && !listProcess->nProcessAlive){
 
         printf("\nfsh> There are live children processes. Terminate the shell? (y/n): ");
@@ -230,7 +230,7 @@ void handlerSigInt(int sig){
     }
 }
 
-void handlerSigTstp(int sig){
+void handlerSigTstp(int sig){    //Tratador do SIGTSTP
 
     if(!listProcess || !listProcess->nProcessAlive){
         printf("\nfsh> SIGTSTP (Ctrl+Z): No child processes.\n");
@@ -249,7 +249,7 @@ void handlerSigTstp(int sig){
     #########################################################
 */
 
-void setActions(){
+void setActions(){          // Sigactions dos sinais
 
     struct sigaction actionSigChild;
     actionSigChild.sa_handler = &handleSigChld;
@@ -273,7 +273,7 @@ void setActions(){
     testInts(sigaction(SIGTSTP, &actionSigTstp, NULL), "Error Sig TStp Action");
 }
 
-void cleanAll(){
+void cleanAll(){      // Funções para liberar memória do programa
     if(process)
     free(process);
     process = NULL;
