@@ -16,11 +16,6 @@
 void    die             ();
 void    waitall         ();
 
-// ###########  Functions to Execute Processes  ###########
-void    runProcess      (char *process);
-pid_t   runForeground   (char *process);
-int     runBackground   (int nProcess, char **process, pid_t *IDs);
-
 // #############  Childrens's Signals Handler  #############
 void    sendSignal      (pid_t pid, int signal);
 void    checkSigChld    (pid_t pid, int status);
@@ -35,10 +30,6 @@ int     splitString     (char *buffer, char **process, char *delimiter, int MAX)
 void    setActions      ();
 void    cleanAll        ();
 
-// ###############  Error Testing Functions  ###############
-int     testProcess     (pid_t pid, char *message);
-void    testPointers    (void* test, char *message);
-void    testInts        (int test, char *message);
 
 /*
     #########################  Main  #########################
@@ -161,64 +152,6 @@ void waitall() {
         testInts(-1, "Error Wait All");        
 }
 
-/*
-    #########################################################
-    ###########   Functions to Execute Processes  ###########
-    #########################################################
-*/
-
-void runProcess(char *process){    
-    int argc = 0;
-    char **argv = malloc(sizeof(char*) * (MAX_N_PARAMS+1)); // +1 for the NULL at the end.
-    testPointers(argv, "Error Malloc -> argv");
-
-    argc = splitString(process, argv, " \n\t\v\f\r", MAX_N_PARAMS);
-    // setando NULL na ultima posição
-    argv[argc] = NULL;
-    
-    // Executando o Comando
-    if(argc)
-        execvp(argv[0], argv);
-    printf("execvp ERRO - process invalid: %s\n", argv[0]);
-    free(argv);
-}
-
-pid_t runForeground(char *process){
-    pid_t pid;
-    testInts((pid=fork()), "Error Fork Foreground");
-
-	if(pid == 0){
-        // printAll(-1);
-        runProcess(process);
-    }
-    return pid;
-}
-
-int runBackground(int nProcess, char **process, pid_t *IDs){
-    if(nProcess == 0)
-        return 0;
-
-    pid_t pid, gpID=0;
-
-    for (int i = 0; i < nProcess; i++){
-        //Criando novo Processo
-        testInts((pid=fork()), "Error Fork Background");
-        if(pid > 0){
-            IDs[i] = pid;
-            if(i==0)
-                gpID = pid;
-            continue;
-        }
-        testInts(setpgid(0, gpID), "Error setPGID Background");
-
-        /* Sons */
-        testInts((pid=fork()), "Error Fork Nested Background");
-        // printAll(i);
-        runProcess(process[i]);
-        return 4;
-    }
-    return 0;
-}
 
 /*
     #########################################################
@@ -364,38 +297,4 @@ void cleanAll(){
 
     cleanList(listProcess);
     listProcess = NULL;
-}
-
-/*
-    #########################################################
-    ###############  Error Testing Functions  ###############
-    #########################################################
-*/
-
-int testProcess(pid_t pid, char *message){
-    
-    if(kill(pid, 0) == 0){
-        return 1;
-    } else
-    if (errno == ESRCH){
-        errno = 0;
-    } else 
-        testInts(-1, message);
-    return 0;
-}
-
-void testPointers(void* test, char *message){
-    if(test == NULL){
-        printf("%s\n", message);
-        exit(2);
-    }
-}
-void testInts(int test, char *message){
-    if(test < 0){
-        if(errno == ECHILD)
-            return;
-        
-        perror(message);
-        exit(1);
-    }
 }
