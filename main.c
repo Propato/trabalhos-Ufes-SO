@@ -7,10 +7,12 @@
 #include <sys/wait.h>
 
 #include "HEADERS/list.h"
+#include "HEADERS/runs.h"
+#include "HEADERS/tests.h"
+#include "HEADERS/utils.h"
 
 // ####################  Process Rules  ####################
 #define MAX_N_PROCESS 5 // 1 foreground + 4 background process
-#define MAX_N_PARAMS 3 // process's name + max params 
 
 // #################  Internal Functions  #################
 void    die             ();
@@ -26,10 +28,8 @@ void    handlerSigInt   (int sig);
 void    handlerSigTstp  (int sig);
 
 // #################  Secondary Functions  #################
-int     splitString     (char *buffer, char **process, char *delimiter, int MAX);
 void    setActions      ();
 void    cleanAll        ();
-
 
 /*
     #########################  Main  #########################
@@ -248,19 +248,6 @@ void handlerSigTstp(int sig){
     #################  Secondary Functions  #################
     #########################################################
 */
-
-int splitString(char *buffer, char **process, char *delimiter, int MAX){
-
-    int n = 0;
-    process[n++] = strtok(buffer, delimiter);
-    if(!process[0])
-        return 0;
-
-    while(n < MAX && (process[n] = strtok(NULL, delimiter)))
-        { n++; }
-
-    return n;
-}
 
 void setActions(){
 

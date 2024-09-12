@@ -1,4 +1,3 @@
-#include "../HEADERS/runProcess.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -6,6 +5,10 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/wait.h>
+
+#include "../HEADERS/runs.h"
+#include "../HEADERS/tests.h"
+#include "../HEADERS/utils.h"
 
 /*
     #########################################################
