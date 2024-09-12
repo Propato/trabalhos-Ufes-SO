@@ -69,7 +69,6 @@ int main(int argc, char **argv){
         testInts(new_size-1, "Error getLine");
         buffer[new_size-1] = '\0';
 
-
         if(!strcmp(buffer, "die")){
             die();
             break;

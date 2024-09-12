@@ -1,7 +1,6 @@
 #ifndef RUNS_H
 #define RUNS_H
 
-
 // ###########  Functions to Execute Processes  ###########
 
 // Executes the execvp function for processes
