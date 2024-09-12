@@ -66,8 +66,6 @@ int main(int argc, char **argv){
         size_t new_size = getline(&buffer, &size, stdin);
         if(new_size > size) size = new_size;
         if(new_size == 1) continue;
-        /* RASCUNHO: SERVE PARA FINALIZAR FACILMENTE A EXECUÇÃO DO PROGRAMA */
-        if(new_size == 2) break;
         testInts(new_size-1, "Error getLine");
         buffer[new_size-1] = '\0';
 
@@ -95,12 +93,6 @@ int main(int argc, char **argv){
             return 4;
         }
 
-        /* RASCUNHO: AUXILIAR NOS TESTES, IMPRIMINDO OS IDS */
-        printf("IDs:");
-        for(int i=0; i< nProcess; i++)
-            printf(" %d", IDs[i]);
-        printf("\n");
-        
         /* *************  Stores Process  IDs  ************* */
         insertList(listProcess, createCel(nProcess, IDs));
 
@@ -223,8 +215,8 @@ void handleSigChld(int sig){
 /*
     For some reason when 'n' is typed there are some bugs.
 */
-void handlerSigInt(int sig){ //Tratador do SIGINT
-    if (listProcess && !listProcess->nProcessAlive){
+void handlerSigInt(int sig){ 
+    if (listProcess && listProcess->nProcessAlive){
 
         printf("\nfsh> There are live children processes. Terminate the shell? (y/n):\n");
         
