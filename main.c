@@ -6,10 +6,10 @@
 #include <unistd.h>
 #include <sys/wait.h>
 
-#include "HEADERS/list.h"
-#include "HEADERS/runs.h"
-#include "HEADERS/tests.h"
-#include "HEADERS/utils.h"
+#include "HEADERS/list.h" // Lista para armazenar os PID dos processos, quantidade de processos por linha e quantidade de processos vivos
+#include "HEADERS/runs.h" // Funções para criar e rodar processos em foreground e background
+#include "HEADERS/tests.h" // 
+#include "HEADERS/utils.h" //
 
 // ####################  Process Rules  ####################
 #define MAX_N_PROCESS 5 // 1 foreground + 4 background process
