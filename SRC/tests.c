@@ -14,7 +14,7 @@
     #########################################################
 */
 
-int testProcess(pid_t pid, char *message){
+int testProcess(pid_t pid, char *message){  // Testa erro de retorno de processo
     
     if(kill(pid, 0) == 0){
         return 1;
@@ -26,13 +26,13 @@ int testProcess(pid_t pid, char *message){
     return 0;
 }
 
-void testPointers(void* test, char *message){
+void testPointers(void* test, char *message){ // Testa erro de retorno de ponteiro
     if(test == NULL){
         printf("%s\n", message);
         exit(2);
     }
 }
-void testInts(int test, char *message){
+void testInts(int test, char *message){ // Testa erro de retorno de inteiro
     if(test < 0){
         if(errno == ECHILD)
             return;
