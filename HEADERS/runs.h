@@ -1,13 +1,12 @@
 #ifndef RUNS_H
 #define RUNS_H
 
-#define MAX_N_PARAMS 3 // process's name + max params 
 
 // ###########  Functions to Execute Processes  ###########
-void    runProcess      (char *process);
+void    runProcess      (char *process, int MAX_N_PARAMS);
 
-pid_t   runForeground   (char *process);
+pid_t   runForeground   (char *process, int MAX_N_PARAMS);
 
-int     runBackground   (int nProcess, char **process, pid_t *IDs);
+int     runBackground   (int nProcess, char **process, pid_t *IDs, int MAX_N_PARAMS);
 
 #endif

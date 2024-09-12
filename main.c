@@ -13,6 +13,7 @@
 
 // ####################  Process Rules  ####################
 #define MAX_N_PROCESS 5 // 1 foreground + 4 background process
+#define MAX_N_PARAMS 3 // process's name + max params 
 
 // #################  Internal Functions  #################
 void    die             ();
@@ -34,18 +35,6 @@ void    cleanAll        ();
 /*
     #########################  Main  #########################
 */
-
-void printAll(int i){
-    pid_t pid = getpid();    // Obtém o ID do processo atual
-    pid_t pgid = getpgid(0); // Obtém o PGID do processo atual
-    pid_t sid = getsid(0);   // Obtém o SID do processo atual
-
-
-    printf("Process: %d\n", i);
-    printf("PID: %d\n", pid);
-    printf("PGID: %d\n", pgid);
-    printf("SID: %d\n", sid);
-}
 
 list *listProcess = NULL;
 char **process = NULL;
@@ -82,6 +71,7 @@ int main(int argc, char **argv){
         testInts(new_size-1, "Error getLine");
         buffer[new_size-1] = '\0';
 
+
         if(!strcmp(buffer, "die")){
             die();
             break;
@@ -95,12 +85,12 @@ int main(int argc, char **argv){
 
         /* *****************  Run Process  ***************** */
         // Both if's are a protection for correct memory and process management, in case a sent process does not work properly.
-        IDs[0] = runForeground(process[0]); // Return the son's pid
+        IDs[0] = runForeground(process[0], MAX_N_PARAMS); // Return the son's pid
         if (IDs[0] == 0){
             cleanAll();
             return 3;
         }
-        if (runBackground(nProcess-1, &process[1], &IDs[1])){
+        if (runBackground(nProcess-1, &process[1], &IDs[1], MAX_N_PARAMS)){
             cleanAll();
             return 4;
         }
@@ -191,6 +181,7 @@ void sendSignal(pid_t pid, int signal){
 
 void checkSigChld(pid_t pid, int status){
     if (WIFSIGNALED(status)) {
+        listProcess->nProcessAlive--;
         sendSignal(pid, WTERMSIG(status));
     } else if (WIFSTOPPED(status)) {
         sendSignal(pid, WSTOPSIG(status));
@@ -203,7 +194,7 @@ void handleSigChld(int sig){
     int status;
     pid_t pid;
 
-    while ((pid = waitpid(-1, &status, WNOHANG | WUNTRACED)) > 0) {
+    while((pid = waitpid(-1, &status, WNOHANG | WUNTRACED)) > 0) {
         checkSigChld(pid, status);
     }
 }
@@ -214,15 +205,22 @@ void handleSigChld(int sig){
     #########################################################
 */
 
+/*
+Por algum motivo, quando é digitado 'n', há alguns bugs.
+*/
 void handlerSigInt(int sig){
-    if (listProcess && !listProcess->nProcessAlive){
+    if(listProcess && listProcess->nProcessAlive){
 
-        printf("\nfsh> There are live children processes. Terminate the shell? (y/n): ");
-        char resposta = getchar();
-        if (resposta == 'y' || resposta == 'Y') {
+        printf("\nfsh> There are live children processes. Terminate the shell? (y/n):\n");
+        
+        size_t size = 2;
+        size = getline(&buffer, &size, stdin);
+        if(buffer[0] == 'y' || buffer[0] == 'Y'){
             cleanAll();
             exit(0); // Kill shell but not the children.
         }
+        int c;
+        while ((c = getchar()) != '\n' && c != EOF);
     } else {
         printf("\nfsh> Ending...\n");
         cleanAll();
@@ -233,14 +231,14 @@ void handlerSigInt(int sig){
 void handlerSigTstp(int sig){
 
     if(!listProcess || !listProcess->nProcessAlive){
-        printf("\nfsh> SIGTSTP (Ctrl+Z): No child processes.\n");
+        printf("\nfsh> SIGTSTP (Ctrl+Z): No child processes.\nfsh>");
         return;
     }
 
     for(cel *c=listProcess->first; c != NULL && listProcess->nProcessAlive; c = c->next){
         sendSignal(c->processIDs[0], sig);
     }
-    printf("\nfsh> SIGTSTP (Ctrl+Z): Stopped children processes.\n");
+    printf("\nfsh> SIGTSTP (Ctrl+Z): Stopped children processes.\nfsh>");
 }
 
 /*
@@ -253,14 +251,14 @@ void setActions(){
 
     struct sigaction actionSigChild;
     actionSigChild.sa_handler = &handleSigChld;
-    actionSigChild.sa_flags = SA_RESTART | SA_NOCLDSTOP;
+    actionSigChild.sa_flags = SA_RESTART;
     sigemptyset(&actionSigChild.sa_mask);
 
     testInts(sigaction(SIGCHLD, &actionSigChild, NULL), "Error Sig Child Action");
 
     struct sigaction actionSigInt;
     actionSigInt.sa_handler = &handlerSigInt;
-    actionSigInt.sa_flags = SA_RESTART | SA_NOCLDSTOP;
+    actionSigInt.sa_flags = SA_RESTART;
     sigemptyset(&actionSigInt.sa_mask);
 
     testInts(sigaction(SIGINT, &actionSigInt, NULL), "Error Sig Int Action");
@@ -268,7 +266,7 @@ void setActions(){
     struct sigaction actionSigTstp;
     actionSigTstp.sa_handler = &handlerSigTstp;
     sigemptyset(&actionSigTstp.sa_mask);
-    actionSigTstp.sa_flags = SA_RESTART | SA_NOCLDSTOP;
+    actionSigTstp.sa_flags = SA_RESTART;
 
     testInts(sigaction(SIGTSTP, &actionSigTstp, NULL), "Error Sig TStp Action");
 }

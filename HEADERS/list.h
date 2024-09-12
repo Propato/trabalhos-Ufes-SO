@@ -19,14 +19,14 @@ struct LIST {
 
 typedef struct LIST list;
 
-list* initList();
+list*   initList    ();
 
-cel* createCel(unsigned int nProcess, pid_t *processIDs);
+cel*    createCel   (unsigned int nProcess, pid_t *processIDs);
 
-void insertList(list *l, cel* c);
+void    insertList  (list *l, cel* c);
 
-cel* findInList(list *l, pid_t ID);
+cel*    findInList  (list *l, pid_t ID);
 
-void cleanList(list *l);
+void    cleanList   (list *l);
 
 #endif
