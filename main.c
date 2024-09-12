@@ -8,8 +8,8 @@
 
 #include "HEADERS/list.h" // Lista para armazenar os PID dos processos, quantidade de processos por linha e quantidade de processos vivos
 #include "HEADERS/runs.h" // Funções para criar e rodar processos em foreground e background
-#include "HEADERS/tests.h" // 
-#include "HEADERS/utils.h" //
+#include "HEADERS/tests.h" // Funções de teste para verificar erros
+#include "HEADERS/utils.h" // Função para separar linha de entrada contendo os comandos
 
 // ####################  Process Rules  ####################
 #define MAX_N_PROCESS 5 // 1 foreground + 4 background process
