@@ -16,7 +16,7 @@
     #########################################################
 */
 
-void runProcess(char *process){    
+void runProcess(char *process){    // Faz o execvp dos processos
     int argc = 0;
     char **argv = malloc(sizeof(char*) * (MAX_N_PARAMS+1)); // +1 for the NULL at the end.
     testPointers(argv, "Error Malloc -> argv");
@@ -32,7 +32,7 @@ void runProcess(char *process){
     free(argv);
 }
 
-pid_t runForeground(char *process){
+pid_t runForeground(char *process){   // Executa processos em foreground
     pid_t pid;
     testInts((pid=fork()), "Error Fork Foreground");
 
@@ -43,7 +43,7 @@ pid_t runForeground(char *process){
     return pid;
 }
 
-int runBackground(int nProcess, char **process, pid_t *IDs){
+int runBackground(int nProcess, char **process, pid_t *IDs){   // Executa processos em background
     if(nProcess == 0)
         return 0;
 
