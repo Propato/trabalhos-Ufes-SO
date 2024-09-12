@@ -5,8 +5,11 @@
 #	   		 UFES Eng. Comp. 
 #	 		Operating Systems
 
+# When the shell is executed from the makefile, there are some errors with keyboard commands
+# (as it is directed to the make process, not the shell process).
+
 # Executable name
-EXEC = SO
+EXEC = FSH
 
 # Main file name (outside the SRC folder)
 MAIN = main
