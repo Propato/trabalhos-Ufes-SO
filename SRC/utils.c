@@ -4,7 +4,7 @@
 
 #include "../HEADERS/utils.h"
 
-int splitString(char *buffer, char **process, char *delimiter, int MAX){ // Função para separar linha de entrada em strings com os processos
+int splitString(char *buffer, char **process, char *delimiter, int MAX){
 
     int n = 0;
     process[n++] = strtok(buffer, delimiter);

@@ -1,6 +1,7 @@
 #ifndef LIST_H
 #define LIST_H
 
+// List that stores the number of living processes. Each cell stores the PIDs of processes created together and the number of processes created in the line.
 struct CEL {
     pid_t *processIDs;
     unsigned int nProcess;
