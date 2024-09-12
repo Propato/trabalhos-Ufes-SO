@@ -6,10 +6,10 @@
 #include <unistd.h>
 #include <sys/wait.h>
 
-#include "HEADERS/list.h"
-#include "HEADERS/runs.h"
-#include "HEADERS/tests.h"
-#include "HEADERS/utils.h"
+#include "HEADERS/list.h" // Lista para armazenar os PID dos processos, quantidade de processos por linha e quantidade de processos vivos
+#include "HEADERS/runs.h" // Funções para executar processos em foreground e background
+#include "HEADERS/tests.h" // Funções de teste para verificar erros
+#include "HEADERS/utils.h" // Função para separar linha de entrada contendo os comandos
 
 // ####################  Process Rules  ####################
 #define MAX_N_PROCESS 5 // 1 foreground + 4 background process
@@ -118,7 +118,7 @@ int main(int argc, char **argv){
     #########################################################
 */
 
-void die() {
+void die() {    //Função interna que finaliza a shell e mata todos os processos antes
     printf("fsh> Killing Shell and Children...\n");
     if(listProcess)
         for(cel *c=listProcess->first; c != NULL && listProcess->nProcessAlive; c = c->next){
@@ -126,7 +126,7 @@ void die() {
         }
 }
 
-void waitall() {
+void waitall() {   //Função interna que libera todos os descendentes zumbies
     pid_t pid;
     int status;
 
@@ -149,7 +149,7 @@ void waitall() {
     #########################################################
 */
 
-void sendSignal(pid_t pid, int signal){
+void sendSignal(pid_t pid, int signal){       //Função para propagar sinal de um processo para os processos na mesma linha
     cel* c = findInList(listProcess, pid);
     if(!c)
         return;
@@ -179,7 +179,7 @@ void sendSignal(pid_t pid, int signal){
     }
 }
 
-void checkSigChld(pid_t pid, int status){
+void checkSigChld(pid_t pid, int status){   //Função para verificar se o processo foi morto ou suspenso por um sinal e enviar o sinal
     if (WIFSIGNALED(status)) {
         listProcess->nProcessAlive--;
         sendSignal(pid, WTERMSIG(status));
@@ -190,7 +190,7 @@ void checkSigChld(pid_t pid, int status){
     }
 }
 
-void handleSigChld(int sig){
+void handleSigChld(int sig){    // Verifica os filhos que finalizaram
     int status;
     pid_t pid;
 
@@ -208,8 +208,8 @@ void handleSigChld(int sig){
 /*
 Por algum motivo, quando é digitado 'n', há alguns bugs.
 */
-void handlerSigInt(int sig){
-    if(listProcess && listProcess->nProcessAlive){
+void handlerSigInt(int sig){ //Tratador do SIGINT
+    if (listProcess && !listProcess->nProcessAlive){
 
         printf("\nfsh> There are live children processes. Terminate the shell? (y/n):\n");
         
@@ -228,7 +228,7 @@ void handlerSigInt(int sig){
     }
 }
 
-void handlerSigTstp(int sig){
+void handlerSigTstp(int sig){    //Tratador do SIGTSTP
 
     if(!listProcess || !listProcess->nProcessAlive){
         printf("\nfsh> SIGTSTP (Ctrl+Z): No child processes.\nfsh>");
@@ -247,7 +247,7 @@ void handlerSigTstp(int sig){
     #########################################################
 */
 
-void setActions(){
+void setActions(){          // Sigactions dos sinais
 
     struct sigaction actionSigChild;
     actionSigChild.sa_handler = &handleSigChld;
@@ -271,7 +271,7 @@ void setActions(){
     testInts(sigaction(SIGTSTP, &actionSigTstp, NULL), "Error Sig TStp Action");
 }
 
-void cleanAll(){
+void cleanAll(){      // Funções para liberar memória do programa
     if(process)
     free(process);
     process = NULL;
