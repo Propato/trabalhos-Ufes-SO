@@ -7,7 +7,7 @@
 #include <sys/wait.h>
 
 #include "HEADERS/list.h" // Lista para armazenar os PID dos processos, quantidade de processos por linha e quantidade de processos vivos
-#include "HEADERS/runs.h" // Funções para criar e rodar processos em foreground e background
+#include "HEADERS/runs.h" // Funções para executar processos em foreground e background
 #include "HEADERS/tests.h" // Funções de teste para verificar erros
 #include "HEADERS/utils.h" // Função para separar linha de entrada contendo os comandos
 
