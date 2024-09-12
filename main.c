@@ -213,7 +213,7 @@ void handleSigChld(int sig){
 */
 
 /*
-    For some reason when 'n' is typed there are some bugs.
+    For some reason when 'n' is typed it is necessary to type Enter a few times for it to work correctly.
 */
 void handlerSigInt(int sig){ 
     if (listProcess && listProcess->nProcessAlive){
