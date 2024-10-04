@@ -1,4 +1,4 @@
-# first-shell
+# Trabalhos Ufes: Sistemas Operacionais
 
 Este é o trabalho desenvolvido na disciplina de Sistemas Operacionais.
 
