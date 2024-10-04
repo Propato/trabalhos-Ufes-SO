@@ -1,33 +1,42 @@
 # first-shell
 
-Vocês devem implementar na linguagem C uma shell denominada fsh (first shell) para colocar em prática os princípios de manipulação de processos.
+Este é o trabalho desenvolvido na disciplina de Sistemas Operacionais.
 
-## Description
+O objetivo é o desenvolvimento de uma shell própria. Executando comandos e funções, em foreground e background.
 
- - List
+Comandos em background são chamados com # e geram filhos, também em background, que executam o mesmo comando.
 
- Descrever aqui o que a lista faz e porque.
+Funções são executadas pela própria shell e chamadas no terminal por `die` e `waitall`.
 
- - Main/Shell
+Se um processo filho da shell receber um sinal, os demais processos chamados na mesma linha de comando devem receber o mesmo sinal.
 
- Descrever aqui o que a main faz e porque (main é basicamente a shell).
+### List
+
+Foi desenvolvida uma lista encadeada com sentinela para armazenar as informações (Ids) dos processos. Cada célula contém os ids dos processos que foram criado juntos (pelos comandos chamados na mesma linha).
+
+Usa-se isso para quando um filho receber um sinal, seu Id é buscado na lista e é retornado todos os Ids dos demais processos que também deverão receber o sinal.
 
 ## Running
 
-Descrever como rodar.
+Inicialmente, é necessário executar o `make all` para compilar e gerar o arquivo executável.
 
-## Using
+```shell
+make all
+./SO
+```
 
-Descrever como usar a shell.
+Agora, basta inserir qualquer comando que a shell executará. Ela chamará os programas igual a shell real.
 
 ## Ending & Cleaning
 
-Descrever como encerrar a shell e como limpar os arquivos (com makefile msm).
+A melhor maneira de encerrar é com o comando: `die`. Para encerrar todos os filhos depois a própria shell, pois caso contrário, a shell pode ser encerrada mas ios filhos em background continuarão existindo.
+
+Mas caso queira, é possível encerrar com `Ctrl + C`.
+
+Após encerrar a shell, usa-se o comando: `make clean` para remover os arquivos de compilação e o executável.
 
 ## Conclusions
 
-Descrever nossos resultados (só falar tipo, em conclusao, nossa shell faz isso e aquilo) e citar os tratamentos de erro e o historico dos processos com a lista.
+Assim, foi possível desenvolver uma shell funcional, que executa comandos e funções próprias, tratando erros para comandos inválidos e mantendo um histórico dos Ids dos processos filhos que ela cria e executa.
 
 <h6 align="center">David Propato <a href="https://github.com/Propato">@Propato</a> </h6>
-<h6 align="center">Elder <a href="https://github.com/Elder">@Elder</a> </h6>
-<h6 align="center">Jose <a href="https://github.com/Jose">@Jose</a> </h6>
